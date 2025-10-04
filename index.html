@@ -4,6 +4,14 @@
   <meta charset="utf-8" />
   <title>Menu — Customer</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1, h2 { color: #333; }
+    button { padding: 5px 15px; margin: 5px; cursor: pointer; }
+    #orderList li { margin-bottom: 5px; }
+    input { width: 50px; padding: 3px; }
+    img { vertical-align: middle; margin-right: 10px; width: 60px; border-radius: 5px; }
+  </style>
 </head>
 <body>
   <h1>Menu (Customer)</h1>
@@ -12,17 +20,12 @@
   <label>Table number: <input type="number" id="tableNumber" min="1" /></label>
 
   <h2>Items</h2>
-  <ul id="menu">
-    <li>🍔 Burger <button data-item="Burger">Add</button></li>
-    <li>🍕 Pizza <button data-item="Pizza">Add</button></li>
-    <li>🥤 Soda <button data-item="Soda">Add</button></li>
-  </ul>
+  <ul id="menu"></ul>
 
   <h2>Your Order</h2>
   <ul id="orderList"></ul>
   <button id="submitBtn">Submit Order</button>
 
-  <!-- Firebase compat scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -38,15 +41,33 @@
       measurementId: "G-V2EMCVFVBE"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     const statusEl = document.getElementById('status');
     const orderListEl = document.getElementById('orderList');
     const submitBtn = document.getElementById('submitBtn');
-    let order = [];
+    const menuEl = document.getElementById('menu');
 
+    // Fixed menuItems structure
+    const menuItems = {
+      "ไข่เจียว": { price: 60, img: "images/crispy omlet.jpg" },
+      "ข้าวผัด": { price: 60, img: "images/fried rice.jpg" },
+      "กระเพราหมูกรอบ": { price: 60, img: "images/Moo krob.jpg" }
+    };
+
+    // Render menu dynamically with images
+    for (const item in menuItems) {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <img src="${menuItems[item].img}" alt="${item}">
+        <strong>${item}</strong> (${menuItems[item].price}฿)
+        <button data-item="${item}">Add</button>
+      `;
+      menuEl.appendChild(li);
+    }
+
+    let order = [];
     statusEl.textContent = 'Ready. Pick table and items.';
 
     // Add items to order
@@ -61,16 +82,17 @@
       orderListEl.innerHTML = '';
       order.forEach(it => {
         const li = document.createElement('li');
-        li.textContent = it;
+        li.innerHTML = `<img src="${menuItems[it].img}" alt="${it}"> ${it} ($${menuItems[it].price})`;
         orderListEl.appendChild(li);
       });
     }
 
-    // Submit order
     submitBtn.addEventListener('click', async () => {
       const table = document.getElementById('tableNumber').value.trim();
       if (!table) { alert('Enter table number'); return; }
       if (order.length === 0) { alert('Pick at least one item'); return; }
+
+      const total = order.reduce((sum, it) => sum + menuItems[it].price, 0);
 
       submitBtn.disabled = true;
       statusEl.textContent = 'Sending order...';
@@ -80,9 +102,10 @@
         await newOrderRef.set({
           table: String(table),
           items: order,
+          total: total,
           timestamp: Date.now()
         });
-        alert('Order sent!');
+        alert(`Order sent! Total: ${total}฿`);
         order = [];
         renderOrder();
         statusEl.textContent = 'Order sent!';
