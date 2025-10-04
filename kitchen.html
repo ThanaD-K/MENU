@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Kitchen — Orders</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body>
+  <h1>Kitchen — Incoming Orders</h1>
+  <div id="status">Initializing...</div>
+  <ul id="orders"></ul>
+
+  <!-- Firebase compat scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDoTQx4ZFZZxxcKRww2lmc-uTjFitPgiH4",
+      authDomain: "food-menu-8135a.firebaseapp.com",
+      databaseURL: "https://food-menu-8135a-default-rtdb.asia-southeast1.firebasedatabase.app", 
+      projectId: "food-menu-8135a",
+      storageBucket: "food-menu-8135a.appspot.com",
+      messagingSenderId: "1078452376421",
+      appId: "1:1078452376421:web:67beb6452461010ca6078c",
+      measurementId: "G-V2EMCVFVBE"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const statusEl = document.getElementById('status');
+    const ordersEl = document.getElementById('orders');
+    statusEl.textContent = 'Listening for orders...';
+
+    db.ref('orders').on('child_added', snapshot => {
+      const data = snapshot.val();
+      const li = document.createElement('li');
+      const when = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'unknown time';
+      li.innerHTML = `<strong>Table ${data.table}</strong> — ${data.items.join(', ')} <br><small>${when}</small>`;
+      ordersEl.appendChild(li);
+    }, err => {
+      console.error('Listen failed:', err);
+      statusEl.textContent = 'Listen failed: ' + err.message;
+    });
+  </script>
+</body>
+</html>
