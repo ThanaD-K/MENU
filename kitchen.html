@@ -36,15 +36,15 @@
 
     const statusEl = document.getElementById('status');
     const ordersEl = document.getElementById('orders');
-    statusEl.textContent = 'Listening for orders...';
+    statusEl.textContent = 'กําลังรอออเดอร์...';
 
     db.ref('orders').on('child_added', snapshot => {
       const data = snapshot.val();
       const li = document.createElement('li');
 
       const when = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'unknown time';
-      li.innerHTML = `<strong>Table ${data.table}</strong> — ${data.items.join(', ')} 
-      <br>Total: ${data.total}฿ <br><small>${when}</small>`;
+      li.innerHTML = `<strong>โต๊ะที่ ${data.table}</strong> — ${data.items.join(', ')} 
+      <br>รวมทั้งหมด: ${data.total}฿ <br><small>${when}</small>`;
 
       // Complete button
       const completeBtn = document.createElement('button');

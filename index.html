@@ -10,21 +10,21 @@
     button { padding: 5px 15px; margin: 5px; cursor: pointer; }
     #orderList li { margin-bottom: 5px; }
     input { width: 50px; padding: 3px; }
-    img { vertical-align: middle; margin-right: 10px; width: 60px; border-radius: 5px; }
+    img { width: 70px; height: 70px; object-fit: cover; vertical-align: middle; margin-right: 10px; }
   </style>
 </head>
 <body>
   <h1>Menu (Customer)</h1>
   <div id="status">Initializing...</div>
 
-  <label>Table number: <input type="number" id="tableNumber" min="1" /></label>
+  <label>เลขโต๊ะ: <input type="number" id="tableNumber" min="1" /></label>
 
-  <h2>Items</h2>
+  <h2>รายการอาหาร</h2>
   <ul id="menu"></ul>
 
-  <h2>Your Order</h2>
+  <h2>ออเดอร์ของคุณ</h2>
   <ul id="orderList"></ul>
-  <button id="submitBtn">Submit Order</button>
+  <button id="submitBtn">ยืนยัน</button>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -47,30 +47,31 @@
     const statusEl = document.getElementById('status');
     const orderListEl = document.getElementById('orderList');
     const submitBtn = document.getElementById('submitBtn');
-    const menuEl = document.getElementById('menu');
 
-    // Fixed menuItems structure
     const menuItems = {
-      "ไข่เจียว": { price: 60, img: "images/crispy omlet.jpg" },
-      "ข้าวผัด": { price: 60, img: "images/fried rice.jpg" },
-      "กระเพราหมูกรอบ": { price: 60, img: "images/Moo krob.jpg" }
+      "ไข่เจียว": { price: 50, img: "images/crispy omlet.jpg" },
+      "ข้าวผัดกุ้ง": { price: 60, img: "images/fried rice.jpg" },
+      "กะเพราหมูกรอบ": { price: 60, img: "images/Moo krob.jpg" },
+      "กะเพราเนื้อ": { price: 60, img: "images/Beef.jpg" },
+      "กะเพราทะเล": { price: 65, img: "images/Sea.jpg" },
     };
 
-    // Render menu dynamically with images
+    // Render menu dynamically
+    const menuEl = document.getElementById('menu');
     for (const item in menuItems) {
       const li = document.createElement('li');
       li.innerHTML = `
         <img src="${menuItems[item].img}" alt="${item}">
-        <strong>${item}</strong> (${menuItems[item].price}฿)
-        <button data-item="${item}">Add</button>
+        <strong>${item}</strong> (฿${menuItems[item].price}) 
+        <button data-item="${item}">เพิ่ม</button>
       `;
       menuEl.appendChild(li);
     }
 
     let order = [];
-    statusEl.textContent = 'Ready. Pick table and items.';
+    statusEl.textContent = 'โปรดระบุเลขโต๊ะ และ เลือกรายการอาหาร';
 
-    // Add items to order
+    // Add to order
     document.querySelectorAll('#menu button').forEach(btn => {
       btn.addEventListener('click', () => {
         order.push(btn.dataset.item);
@@ -78,24 +79,39 @@
       });
     });
 
+    // Render order with "remove" buttons
     function renderOrder() {
       orderListEl.innerHTML = '';
-      order.forEach(it => {
+      order.forEach((it, index) => {
         const li = document.createElement('li');
-        li.innerHTML = `<img src="${menuItems[it].img}" alt="${it}"> ${it} ($${menuItems[it].price})`;
+        li.innerHTML = `
+          <img src="${menuItems[it].img}" alt="${it}">
+          ${it} (฿${menuItems[it].price})
+          <button data-index="${index}" class="removeBtn">ยกเลิก</button>
+        `;
         orderListEl.appendChild(li);
+      });
+
+      // Add remove functionality
+      document.querySelectorAll('.removeBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const index = btn.dataset.index;
+          order.splice(index, 1);
+          renderOrder();
+        });
       });
     }
 
+    // Submit order to Firebase
     submitBtn.addEventListener('click', async () => {
       const table = document.getElementById('tableNumber').value.trim();
-      if (!table) { alert('Enter table number'); return; }
-      if (order.length === 0) { alert('Pick at least one item'); return; }
+      if (!table) { alert('กรุณาระบุเลขโต๊ะ'); return; }
+      if (order.length === 0) { alert('กรุณาเลือกรายการอาหาร'); return; }
 
       const total = order.reduce((sum, it) => sum + menuItems[it].price, 0);
 
       submitBtn.disabled = true;
-      statusEl.textContent = 'Sending order...';
+      statusEl.textContent = 'กําลังออเดอร์';
 
       try {
         const newOrderRef = db.ref('orders').push();
@@ -105,10 +121,10 @@
           total: total,
           timestamp: Date.now()
         });
-        alert(`Order sent! Total: ${total}฿`);
+        alert(`ออเดอร์สําเร็จ! รวมทั้งหมด: ฿${total}`);
         order = [];
         renderOrder();
-        statusEl.textContent = 'Order sent!';
+        statusEl.textContent = 'ออเดอร์แล้ว!';
       } catch (err) {
         console.error(err);
         alert('Failed to send order. See console.');
